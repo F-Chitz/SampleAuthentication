@@ -8,6 +8,15 @@ builder.Services.AddDbContext<SampleAuthenticationContext>(options => options.Us
 
 builder.Services.AddDefaultIdentity<SampleAuthenticationUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<SampleAuthenticationContext>();
 
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy("PageI", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireClaim("HasPageI", bool.TrueString)));
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy("PageII", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireClaim("HasPageII", bool.TrueString)));
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 
@@ -22,6 +31,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();

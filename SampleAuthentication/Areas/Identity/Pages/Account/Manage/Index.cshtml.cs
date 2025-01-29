@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
@@ -52,6 +53,18 @@ namespace SampleAuthentication.Areas.Identity.Pages.Account.Manage
         /// </summary>
         public class InputModel
         {
+            [Required]
+            [StringLength(200, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 3)]
+            [Display(Name = "Full Name")]
+            public string FullName { get; set; }
+            [Required]
+            [StringLength(50, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 3)]
+            [Display(Name = "Preferred Name")]
+            public string PreferredName { get; set; }
+
+            public bool HasPageI { get; set; }
+            public bool HasPageII { get; set; }
+
             /// <summary>
             ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
             ///     directly from your code. This API may change or be removed in future releases.
@@ -67,10 +80,30 @@ namespace SampleAuthentication.Areas.Identity.Pages.Account.Manage
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
 
             Username = userName;
+            bool _HasPageI = false;
+            bool _HasPageII = false;
+            var claims = await _userManager.GetClaimsAsync(user);
+            foreach (var claim in claims)
+            {
+                switch (claim.Type)
+                {
+                    case "HasPageI":
+                        _HasPageI = true;
+                        break;
+                    case "HasPageII":
+                        _HasPageII = true;
+                        break;
+
+                }
+            }
 
             Input = new InputModel
             {
-                PhoneNumber = phoneNumber
+                PhoneNumber = phoneNumber,
+                FullName = user.FullName,
+                PreferredName = user.PreferredName,
+                HasPageI = _HasPageI,
+                HasPageII = _HasPageII
             };
         }
 
@@ -111,9 +144,43 @@ namespace SampleAuthentication.Areas.Identity.Pages.Account.Manage
                 }
             }
 
+            user.FullName = Input.FullName;
+            user.PreferredName = Input.PreferredName;
+
+            await ManageClaimsAsync(user);
+
+            await _userManager.UpdateAsync(user);
+
+
             await _signInManager.RefreshSignInAsync(user);
             StatusMessage = "Your profile has been updated";
             return RedirectToPage();
+        }
+
+
+        private async Task ManageClaimsAsync(SampleAuthenticationUser user)
+        {
+            var usersClaims = await _userManager.GetClaimsAsync(user);
+
+
+            if (Input.HasPageI && !usersClaims.Any(x => x.Type == "HasPageI"))
+            {
+                await _userManager.AddClaimAsync(user, new Claim("HasPageI", Input.HasPageI.ToString()));
+            }
+            else if (!Input.HasPageI && usersClaims.Any(x => x.Type == "HasPageI"))
+            {
+                await _userManager.RemoveClaimAsync(user, usersClaims.FirstOrDefault(x => x.Type == "HasPageI"));
+            }
+
+            if (Input.HasPageII && !usersClaims.Any(x => x.Type == "HasPageII"))
+            {
+                await _userManager.AddClaimAsync(user, new Claim("HasPageII", Input.HasPageII.ToString()));
+            }
+            else if (!Input.HasPageII && usersClaims.Any(x => x.Type == "HasPageII"))
+            {
+                await _userManager.RemoveClaimAsync(user, usersClaims.FirstOrDefault(x => x.Type == "HasPageII"));
+            }
+
         }
     }
 }
