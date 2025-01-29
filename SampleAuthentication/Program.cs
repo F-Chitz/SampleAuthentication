@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using QRCoder;
 using SampleAuthentication.Areas.Identity.Data;
+using SampleAuthentication.Service;
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("SampleAuthenticationContextConnection") ?? throw new InvalidOperationException("Connection string 'SampleAuthenticationContextConnection' not found.");
 
@@ -19,6 +21,8 @@ builder.Services.AddAuthorization(options =>
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+
+builder.Services.AddSingleton(new QRCodeService(new QRCodeGenerator()));
 
 var app = builder.Build();
 
